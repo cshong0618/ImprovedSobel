@@ -83,6 +83,7 @@ parser.add_argument("--input", help="Input file", type=str, required=True)
 parser.add_argument("--output", help="Output file", type=str, required=True)
 parser.add_argument("--invert", help="Invert color to blank line white background", default=False, action='store_true')
 parser.add_argument("--removal_scale", help="Magnitude of details removal", default=5, type=float)
+parser.add_argument("--gpu", help="Use GPU", default=False, action='store_true')
 
 args = parser.parse_args(sys.argv[1:])
 
@@ -96,12 +97,19 @@ img_tensor = T(img)
 x = img_tensor[0].view(1, 1, img_tensor[0].size(0), img_tensor[0].size(1))
 
 sobel = Sobel(args.removal_scale)
-sobel.cuda()
 
-x = Variable(x).cuda()
+if args.gpu:
+    sobel.cuda()
+    x = Variable(x).cuda()
+else:
+    x = Variable(x)
 
 X = sobel(x)
-X = P(X.cpu())
+
+if args.gpu:
+    X = P(X.cpu())
+else:
+    X = P(X)
 
 if args.invert:
     X = PIL.ImageOps.invert(X)
